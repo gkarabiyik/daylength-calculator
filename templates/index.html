@@ -1,44 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Day Length Comparison</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <h1>Day Length Comparison</h1>
     <form id="dayLengthForm">
         <label for="year">Year:</label>
-        <input type="number" id="year" name="year" required>
-        <label for="locations">Locations (country,city):</label>
-        <textarea id="locations" name="locations" required></textarea>
+        <input type="text" id="year" name="year" required><br>
+        
+        <h3>Locations:</h3>
+        <div id="locations">
+            <div class="location">
+                <label for="country">Country:</label>
+                <input type="text" name="country" required>
+                <label for="city">City:</label>
+                <input type="text" name="city" required>
+            </div>
+        </div>
+        <button type="button" id="addLocation">Add another location</button><br><br>
+        
         <button type="submit">Generate Plot</button>
     </form>
+    <br>
     <div>
-        <h2>Plot:</h2>
-        <img id="plot" src="" alt="Day Length Plot">
+        <img id="plotImage" style="display: none;">
     </div>
+
     <script>
-        document.getElementById('dayLengthForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const year = document.getElementById('year').value;
-            const locations = document.getElementById('locations').value.split('\n').map(loc => {
-                const [country, city] = loc.split(',');
-                return { country, city };
+        $(document).ready(function() {
+            $('#addLocation').click(function() {
+                $('#locations').append('<div class="location"><label for="country">Country:</label><input type="text" name="country" required><label for="city">City:</label><input type="text" name="city" required></div>');
             });
-            
-            fetch('/plot', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ year, locations })
-            })
-            .then(response => response.blob())
-            .then(blob => {
-                const url = URL.createObjectURL(blob);
-                document.getElementById('plot').src = url;
-            })
-            .catch(error => console.error('Error:', error));
+
+            $('#dayLengthForm').submit(function(event) {
+                event.preventDefault();
+
+                const locations = [];
+                $('.location').each(function() {
+                    const country = $(this).find('input[name="country"]').val();
+                    const city = $(this).find('input[name="city"]').val();
+                    locations.push({ country, city });
+                });
+
+                const year = $('#year').val();
+
+                $.ajax({
+                    url: '/plot',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ locations, year }),
+                    success: function(response) {
+                        // Create a URL for the image and display it
+                        const blob = new Blob([response]);
+                        const imgUrl = URL.createObjectURL(blob);
+                        $('#plotImage').attr('src', imgUrl).show();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error: ", error);
+                    }
+                });
+            });
         });
     </script>
 </body>
