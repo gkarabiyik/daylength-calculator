@@ -51,7 +51,8 @@ def plot_day_length():
                 if table is None:
                     raise ValueError(f"Day length table not found for {city} in {year}")
 
-                df = pd.read_html(str(table))[0]  # Read the table into a DataFrame
+                from io import StringIO
+                df = pd.read_html(StringIO(str(table)))[0]
                 df['Daylength'] = pd.to_datetime(df['Daylength'], format='%H:%M:%S', errors='coerce')
                 df = df.dropna(subset=['Daylength'])
                 df['Length'] = (df['Daylength'].dt.hour * 60 + df['Daylength'].dt.minute) / 60
