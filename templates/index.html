@@ -6,7 +6,8 @@
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
         .box { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .row { display: flex; gap: 5px; margin-bottom: 10px; }
+        /* Changed .row to .location-row to match the HTML */
+        .location-row { display: flex; gap: 5px; margin-bottom: 10px; }
         input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; }
         #addBtn { background: #6c757d; color: white; margin-bottom: 10px; }
@@ -17,8 +18,7 @@
 </head>
 
 <body>
-    <div class="container">
-        <h1>🌍 Daylight Comparison</h1>
+    <div class="box"> <h1>🌍 Daylight Comparison</h1>
         <p>Analyze daylight patterns.</p>
         
         <form id="plotForm">
@@ -38,44 +38,46 @@
         <div id="status">⏳ Processing data... this takes about 20s.</div>
         <img id="plotImage">
     </div>
-</body>
 
-<script>
-    $(document).ready(function() {
-
-        $('#addBtn').click(() => {
-            $('#inputs').append('<div class="location-row"><input type="text" name="country" placeholder="Country" required><input type="text" name="city" placeholder="City" required></div>');
-        });
-        $('#plotForm').submit(async function(e) {
-            e.preventDefault();
-            $('#status').show();
-            $('#plotImage').hide();
-
-            const locations = [];
-            $('.location-row').each(function() {
-                locations.push({
-                    country: $(this).find('input[name="country"]').val(),
-                    city: $(this).find('input[name="city"]').val()
-                });
+    <script>
+        $(document).ready(function() {
+            // Updated to append .location-row
+            $('#addBtn').click(() => {
+                $('#inputs').append('<div class="location-row"><input type="text" name="country" placeholder="Country" required><input type="text" name="city" placeholder="City" required></div>');
             });
-            try {
-                const response = await fetch('/plot', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ locations })
+
+            $('#plotForm').submit(async function(e) {
+                e.preventDefault();
+                $('#status').show();
+                $('#plotImage').hide();
+
+                const locations = [];
+                // Updated selector to .location-row
+                $('.location-row').each(function() {
+                    locations.push({
+                        country: $(this).find('input[name="country"]').val(),
+                        city: $(this).find('input[name="city"]').val()
+                    });
                 });
 
-                if (!response.ok) throw new Error("Check spelling or logs.");
+                try {
+                    const response = await fetch('/plot', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ locations })
+                    });
 
-                const blob = await response.blob();
-                $('#plotImage').attr('src', URL.createObjectURL(blob)).show();
-            } catch (err) {
-                alert(err.message);
-            } finally {
-                $('#status').hide();
-            }
+                    if (!response.ok) throw new Error("Check spelling or logs.");
+
+                    const blob = await response.blob();
+                    $('#plotImage').attr('src', URL.createObjectURL(blob)).show();
+                } catch (err) {
+                    alert(err.message);
+                } finally {
+                    $('#status').hide();
+                }
+            });
         });
-    });
-</script>
+    </script>
 </body>
 </html>
