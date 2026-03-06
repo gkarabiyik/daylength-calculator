@@ -1,39 +1,116 @@
+/* Modern Reset & Background */
 body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-    padding: 20px;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f0f2f5;
+    color: #1c1e21;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding-top: 50px;
+}
+
+/* Main Container Card */
+.container {
+    background: #ffffff;
+    width: 90%;
+    max-width: 700px;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-    color: #333;
+    margin-top: 0;
+    font-size: 28px;
+    color: #007bff;
+    text-align: center;
 }
 
-form {
-    margin-bottom: 20px;
+p {
+    text-align: center;
+    color: #606770;
+    margin-bottom: 30px;
 }
 
-label {
-    display: block;
-    margin-top: 10px;
+/* Form Styling */
+.location-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
 
-input, button {
-    padding: 10px;
-    margin-top: 5px;
-    display: block;
+input {
+    flex: 1; /* Makes Country and City take equal space */
+    padding: 12px;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+input:focus {
+    border-color: #007bff;
+}
+
+/* Buttons */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
 }
 
 button {
-    background-color: #007BFF;
-    color: white;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 6px;
     border: none;
     cursor: pointer;
+    transition: all 0.2s;
 }
 
-button:hover {
-    background-color: #0056b3;
+/* Primary "Generate" Button */
+#submitBtn {
+    background-color: #28a745;
+    color: white;
+    flex: 2;
 }
 
-canvas {
-    max-width: 100%;
+#submitBtn:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+/* Secondary "Add City" Button */
+#addBtn {
+    background-color: #6c757d;
+    color: white;
+    flex: 1;
+}
+
+#addBtn:hover {
+    background-color: #5a6268;
+}
+
+/* Results Section */
+#status {
+    text-align: center;
+    margin-top: 20px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+#plotImage {
+    margin-top: 30px;
+    width: 100%;
+    border-radius: 8px;
+    display: none; /* Hidden until generated */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
