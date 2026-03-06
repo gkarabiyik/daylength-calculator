@@ -1,70 +1,92 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Day Length Comparison</title>
+    <meta charset="UTF-8">
+    <title>Daylight Comparison Tool</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        .location { margin-bottom: 10px; border: 1px solid #ccc; padding: 10px; }
-        #status { color: blue; font-weight: bold; display: none; }
-        #plotImage { display: none; margin-top: 20px; max-width: 100%; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .location-row { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
+        select { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #ddd; font-size: 16px; }
+        button { padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-add { background-color: #6c757d; color: white; }
+        .btn-submit { background-color: #007bff; color: white; width: 100%; font-size: 18px; margin-top: 10px; }
+        #status { display: none; text-align: center; margin-top: 20px; color: #007bff; }
+        #plotImage { display: none; width: 100%; margin-top: 30px; border-radius: 8px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
-    <h1>Day Length Comparison</h1>
-    <form id="dayLengthForm">
-        <label>Year: <input type="number" id="year" value="2024" required></label>
-        <h3>Locations:</h3>
-        <div id="locations">
-            <div class="location">
-                <input type="text" name="country" placeholder="Country (e.g. finland)" required>
-                <input type="text" name="city" placeholder="City (e.g. tampere)" required>
+
+<div class="container">
+    <h1>🌞 Day Length Comparison</h1>
+    <p>Select multiple cities to compare their daylight hours throughout the current year.</p>
+
+    <form id="plotForm">
+        <div id="locationList">
+            <div class="location-row">
+                <select name="city_path" required>
+                    <option value="finland/tampere">Tampere, Finland</option>
+                    <option value="finland/helsinki">Helsinki, Finland</option>
+                    <option value="uk/london">London, UK</option>
+                    <option value="usa/new-york">New York, USA</option>
+                    <option value="usa/miami">Miami, USA</option>
+                    <option value="turkey/istanbul">Istanbul, Turkey</option>
+                    <option value="turkey/ankara">Ankara, Turkey</option>
+                    <option value="australia/sydney">Sydney, Australia</option>
+                    <option value="norway/oslo">Oslo, Norway</option>
+                    <option value="singapore/singapore">Singapore, Singapore</option>
+                </select>
             </div>
         </div>
-        <button type="button" id="addLocation">+ Add Location</button>
-        <button type="submit">Generate Plot</button>
+
+        <button type="button" class="btn-add" id="addCity">+ Add Another City</button>
+        <button type="submit" class="btn-submit">Generate Comparison Plot</button>
     </form>
 
-    <div id="status">⏳ Scraping 12 months of data... Please wait about 20 seconds.</div>
-    <img id="plotImage">
+    <div id="status">⌛ Processing global data... this takes about 20 seconds.</div>
+    <img id="plotImage" alt="Daylight Graph">
+</div>
 
-    <script>
-        $(document).ready(function() {
-            $('#addLocation').click(() => {
-                $('#locations').append('<div class="location"><input type="text" name="country" required> <input type="text" name="city" required></div>');
+<script>
+    $(document).ready(function() {
+        // Add a new dropdown row
+        $('#addCity').click(function() {
+            const newRow = $('.location-row:first').clone();
+            $('#locationList').append(newRow);
+        });
+
+        $('#plotForm').submit(async function(e) {
+            e.preventDefault();
+            $('#status').show();
+            $('#plotImage').hide();
+
+            const locations = [];
+            $('select[name="city_path"]').each(function() {
+                const parts = $(this).val().split('/');
+                locations.push({ country: parts[0], city: parts[1] });
             });
 
-            $('#dayLengthForm').submit(async function(e) {
-                e.preventDefault();
-                $('#status').show();
-                $('#plotImage').hide();
-
-                const locations = [];
-                $('.location').each(function() {
-                    locations.push({
-                        country: $(this).find('input[name="country"]').val(),
-                        city: $(this).find('input[name="city"]').val()
-                    });
+            try {
+                const response = await fetch('/plot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ locations })
                 });
 
-                try {
-                    const response = await fetch('/plot', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ locations, year: $('#year').val() })
-                    });
+                if (!response.ok) throw new Error("Server error");
 
-                    if (!response.ok) throw new Error("Check city names and logs.");
-
-                    const blob = await response.blob();
-                    $('#plotImage').attr('src', URL.createObjectURL(blob)).show();
-                } catch (err) {
-                    alert("Error: " + err.message);
-                } finally {
-                    $('#status').hide();
-                }
-            });
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                $('#plotImage').attr('src', url).fadeIn();
+            } catch (err) {
+                alert("Could not generate plot. Please check logs.");
+            } finally {
+                $('#status').hide();
+            }
         });
-    </script>
+    });
+</script>
+
 </body>
 </html>
