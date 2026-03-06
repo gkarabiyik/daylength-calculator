@@ -4,47 +4,40 @@
     <title>Daylight Comparison</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 30px; background: #f0f2f5; }
-        .card { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .location-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        button { padding: 10px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
-        #submitBtn { background: #28a745; color: white; width: 100%; margin-top: 10px; }
-        #addBtn { background: #6c757d; color: white; margin-bottom: 15px; }
-        #status { display: none; text-align: center; color: #007bff; margin: 15px 0; }
-        img { display: none; width: 100%; border-radius: 5px; margin-top: 20px; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+        .box { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .row { display: flex; gap: 5px; margin-bottom: 10px; }
+        input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; }
+        #addBtn { background: #6c757d; color: white; margin-bottom: 10px; }
+        #submitBtn { background: #007bff; color: white; width: 100%; }
+        #status { display: none; text-align: center; margin: 15px; color: #007bff; }
+        img { display: none; width: 100%; margin-top: 20px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>☀️ Day Length Plotter</h2>
-    <p>Enter any country and city (e.g., "Finland" and "Tampere").</p>
-
+<div class="box">
+    <h2>☀️ Daylight Plotter</h2>
+    <p>Compare cities using last year's data.</p>
     <form id="plotForm">
-        <div id="locationList">
-            <div class="location-group">
-                <input type="text" name="country" placeholder="Country" required>
-                <input type="text" name="city" placeholder="City" required>
+        <div id="inputs">
+            <div class="row">
+                <input type="text" name="country" placeholder="Country (e.g. usa)" required>
+                <input type="text" name="city" placeholder="City (e.g. miami)" required>
             </div>
         </div>
-
         <button type="button" id="addBtn">+ Add City</button>
-        <button type="submit" id="submitBtn">Generate Comparison</button>
+        <button type="submit" id="submitBtn">Generate Plot</button>
     </form>
-
-    <div id="status">⏳ Scraping global data... (approx. 20s)</div>
+    <div id="status">⌛ Loading 12 months of data...</div>
     <img id="plotImage">
 </div>
 
 <script>
     $(document).ready(function() {
         $('#addBtn').click(() => {
-            $('#locationList').append(`
-                <div class="location-group">
-                    <input type="text" name="country" placeholder="Country" required>
-                    <input type="text" name="city" placeholder="City" required>
-                </div>`);
+            $('#inputs').append('<div class="row"><input type="text" name="country" placeholder="Country" required><input type="text" name="city" placeholder="City" required></div>');
         });
 
         $('#plotForm').submit(async function(e) {
@@ -53,7 +46,7 @@
             $('#plotImage').hide();
 
             const locations = [];
-            $('.location-group').each(function() {
+            $('.row').each(function() {
                 locations.push({
                     country: $(this).find('input[name="country"]').val(),
                     city: $(this).find('input[name="city"]').val()
@@ -67,10 +60,10 @@
                     body: JSON.stringify({ locations })
                 });
 
-                if (!response.ok) throw new Error("Could not find data for those locations.");
+                if (!response.ok) throw new Error("Check spelling or logs.");
 
                 const blob = await response.blob();
-                $('#plotImage').attr('src', URL.createObjectURL(blob)).fadeIn();
+                $('#plotImage').attr('src', URL.createObjectURL(blob)).show();
             } catch (err) {
                 alert(err.message);
             } finally {
@@ -79,6 +72,5 @@
         });
     });
 </script>
-
 </body>
 </html>
