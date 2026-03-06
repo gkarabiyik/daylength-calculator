@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, jsonify, send_file
 from bs4 import BeautifulSoup
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates  # <--- ADD THIS
 import logging
 
 app = Flask(__name__)
@@ -25,7 +26,6 @@ def plot_day_length():
     data = request.json
     locations = data.get('locations', [])
     
-    # CALCULATE LAST YEAR HERE
     current_year = datetime.datetime.now().year
     year = current_year - 1 
     
@@ -41,7 +41,6 @@ def plot_day_length():
             all_hours = []
             
             for month in range(1, 13):
-                # The 'year' variable here is now (current_year - 1)
                 url = f'{BASE_URL}{country}/{city}?month={month}&year={year}'
                 response = requests.get(url, headers=headers)
                 
@@ -58,7 +57,6 @@ def plot_day_length():
                         break
 
                 if target_table:
-                    # Fix for Railway OSError
                     df = pd.read_html(io.StringIO(str(target_table)))[0]
                     
                     if isinstance(df.columns, pd.MultiIndex):
@@ -71,21 +69,29 @@ def plot_day_length():
                             break
                     
                     if col_name:
-                        # Convert HH:MM:SS to decimal hours
                         df['TempDate'] = pd.to_datetime(df[col_name], format='%H:%M:%S', errors='coerce')
                         df = df.dropna(subset=['TempDate'])
-                        # Calculation: (Hours * 60 + Minutes) / 60
                         hours = (df['TempDate'].dt.hour * 60 + df['TempDate'].dt.minute) / 60
                         all_hours.extend(hours.tolist())
 
             if all_hours:
-                plt.plot(range(len(all_hours)), all_hours, label=city.title())
+                # --- NEW LOGIC START ---
+                # Create a list of dates corresponding to the number of data points we found
+                start_date = datetime.datetime(year, 1, 1)
+                date_list = [start_date + datetime.timedelta(days=i) for i in range(len(all_hours))]
+                
+                plt.plot(date_list, all_hours, label=city.title())
+                # --- NEW LOGIC END ---
                 data_found = True
 
         if not data_found:
             return jsonify({'error': 'No data found. Check city names!'}), 404
 
-        plt.xlabel('Day of Year')
+        # --- FORMATTING THE MONTHS ---
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%b')) # Shows 'Jan', 'Feb', etc.
+        plt.gca().xaxis.set_major_locator(mdates.MonthLocator())        # Puts a tick at every month
+        
+        plt.xlabel('Month') # Changed from Day of Year
         plt.ylabel('Hours of Daylight')
         plt.title(f'Daylight Comparison (Data from {year})')
         plt.legend()
