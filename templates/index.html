@@ -120,13 +120,13 @@
 <body>
     <div class="container">
         <h1>☀️ Daylight Visualizer</h1>
-        <p>Compare sunlight patterns using data from the past year.</p>
+        <p>Compare daytime of different cities.</p>
         
         <form id="plotForm">
             <div id="inputs">
                 <div class="location-row">
-                    <input type="text" name="country" placeholder="Country (e.g. uk)" required>
-                    <input type="text" name="city" placeholder="City (e.g. london)" required>
+                    <input type="text" name="country" placeholder="Country (e.g. finland)" required>
+                    <input type="text" name="city" placeholder="City (e.g. tampere)" required>
                 </div>
             </div>
 
@@ -136,7 +136,7 @@
             </div>
         </form>
 
-        <div id="status">⌛ Fetching 12 months of global data...</div>
+        <div id="status">⌛ Fetching data...</div>
         <img id="plotImage" alt="Daylight Comparison Graph">
     </div>
 
