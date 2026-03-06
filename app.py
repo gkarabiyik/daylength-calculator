@@ -1,5 +1,6 @@
 import os
 import io
+import datetime
 import matplotlib
 matplotlib.use('Agg') 
 
@@ -8,10 +9,8 @@ from flask import Flask, render_template, request, jsonify, send_file
 from bs4 import BeautifulSoup
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import logging
-
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 
@@ -25,18 +24,20 @@ def index():
 def plot_day_length():
     data = request.json
     locations = data.get('locations', [])
-    year = data.get('year', 2024)
     
-    plt.figure(figsize=(10, 6))
+    # Always use the current year
+    year = datetime.datetime.now().year
+    
+    plt.figure(figsize=(12, 6))
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
     try:
         for loc in locations:
-            # Fix: Lowercase and replace spaces for URL
-            country = loc['country'].strip().lower().replace(" ", "-")
-            city = loc['city'].strip().lower().replace(" ", "-")
-            combined_data = pd.DataFrame()
+            country = loc['country']
+            city = loc['city']
+            combined_data = []
             
+            # Scrape 12 months
             for month in range(1, 13):
                 url = f'{BASE_URL}{country}/{city}?month={month}&year={year}'
                 response = requests.get(url, headers=headers)
@@ -44,25 +45,31 @@ def plot_day_length():
                 table = soup.find('table', {'id': 'as-monthsun'})
 
                 if table:
-                    # Fix: Use StringIO to prevent OSError
                     html_str = io.StringIO(str(table))
                     df = pd.read_html(html_str)[0]
-                    
-                    # Target the 'Length' column for daylight hours
                     df.columns = df.columns.get_level_values(-1)
+                    
                     if 'Length' in df.columns:
-                        df['Daylength'] = pd.to_datetime(df['Length'], format='%H:%M:%S', errors='coerce')
+                        # Convert to timedeltas then to float hours
+                        df['Daylength'] = pd.to_timedelta(df['Length'] + ':00', errors='coerce')
                         df = df.dropna(subset=['Daylength'])
-                        df['Hours'] = (df['Daylength'].dt.hour * 60 + df['Daylength'].dt.minute) / 60
-                        combined_data = pd.concat([combined_data, df[['Hours']]], ignore_index=True)
+                        df['Hours'] = df['Daylength'].dt.total_seconds() / 3600
+                        combined_data.extend(df['Hours'].tolist())
             
-            if not combined_data.empty:
-                plt.plot(combined_data.index, combined_data['Hours'], label=f'{city}')
+            if combined_data:
+                # Create a date range for the X-axis to show Months
+                dates = pd.date_range(start=f"{year}-01-01", periods=len(combined_data))
+                plt.plot(dates, combined_data, label=f'{city.replace("-", " ").title()}')
+
+        # Formatting the X-Axis to show Month Names
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+        plt.gca().xaxis.set_major_locator(mdates.MonthLocator())
         
-        plt.xlabel('Day of Year')
+        plt.xlabel('Month')
         plt.ylabel('Hours of Daylight')
-        plt.title(f'Day Length Comparison ({year})')
+        plt.title(f'Daylight Patterns for {year}')
         plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.6)
         
         img = io.BytesIO()
         plt.savefig(img, format='png')
@@ -70,7 +77,6 @@ def plot_day_length():
         return send_file(img, mimetype='image/png')
     
     except Exception as e:
-        logging.exception("Error generating plot")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
