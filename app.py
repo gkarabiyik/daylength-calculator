@@ -93,7 +93,7 @@ def plot_day_length():
         
         plt.xlabel('Month') # Changed from Day of Year
         plt.ylabel('Hours of Daylight')
-        plt.title(f'Daylight Comparison (Data from {year})')
+        plt.title(f'Daylight Comparison')
         plt.legend()
         plt.grid(True, alpha=0.3)
         
