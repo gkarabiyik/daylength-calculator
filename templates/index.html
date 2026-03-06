@@ -3,42 +3,39 @@
 <head>
     <title>Day Length Comparison</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .location { margin-bottom: 10px; border: 1px solid #ccc; padding: 10px; }
+        #status { color: blue; font-weight: bold; display: none; }
+        #plotImage { display: none; margin-top: 20px; max-width: 100%; }
+    </style>
 </head>
 <body>
     <h1>Day Length Comparison</h1>
     <form id="dayLengthForm">
-        <label for="year">Year:</label>
-        <input type="number" id="year" name="year" value="2024" required><br>
-        
+        <label>Year: <input type="number" id="year" value="2024" required></label>
         <h3>Locations:</h3>
         <div id="locations">
             <div class="location">
-                <label>Country:</label>
-                <input type="text" name="country" placeholder="e.g. usa" required>
-                <label>City:</label>
-                <input type="text" name="city" placeholder="e.g. new-york" required>
+                <input type="text" name="country" placeholder="Country (e.g. finland)" required>
+                <input type="text" name="city" placeholder="City (e.g. tampere)" required>
             </div>
         </div>
-        <br>
         <button type="button" id="addLocation">+ Add Location</button>
         <button type="submit">Generate Plot</button>
     </form>
 
-    <div id="status" style="margin-top: 20px; color: blue; display: none;">Generating plot... This may take 30 seconds.</div>
-    
-    <div style="margin-top: 30px;">
-        <img id="plotImage" style="display: none; max-width: 100%; border: 1px solid #ccc;">
-    </div>
+    <div id="status">⏳ Scraping 12 months of data... Please wait about 20 seconds.</div>
+    <img id="plotImage">
 
     <script>
         $(document).ready(function() {
-            $('#addLocation').click(function() {
-                $('#locations').append('<div class="location" style="margin-top:10px;"><label>Country:</label><input type="text" name="country" required><label>City:</label><input type="text" name="city" required></div>');
+            $('#addLocation').click(() => {
+                $('#locations').append('<div class="location"><input type="text" name="country" required> <input type="text" name="city" required></div>');
             });
 
-            $('#dayLengthForm').submit(async function(event) {
-                event.preventDefault();
+            $('#dayLengthForm').submit(async function(e) {
+                e.preventDefault();
                 $('#status').show();
                 $('#plotImage').hide();
 
@@ -50,23 +47,19 @@
                     });
                 });
 
-                const year = $('#year').val();
-
                 try {
                     const response = await fetch('/plot', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ locations, year })
+                        body: JSON.stringify({ locations, year: $('#year').val() })
                     });
 
-                    if (!response.ok) throw new Error('Server error');
+                    if (!response.ok) throw new Error("Check city names and logs.");
 
                     const blob = await response.blob();
-                    const imgUrl = URL.createObjectURL(blob);
-                    $('#plotImage').attr('src', imgUrl).show();
-                } catch (error) {
-                    alert("Error generating plot. Check city names or server logs.");
-                    console.error(error);
+                    $('#plotImage').attr('src', URL.createObjectURL(blob)).show();
+                } catch (err) {
+                    alert("Error: " + err.message);
                 } finally {
                     $('#status').hide();
                 }
