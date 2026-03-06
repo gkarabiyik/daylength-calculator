@@ -1,19 +1,19 @@
+import os
+import io
 import matplotlib
-matplotlib.use('Agg')  # Use the Anti-Grain Geometry backend
+matplotlib.use('Agg') 
 
 import requests
 from flask import Flask, render_template, request, jsonify, send_file
 from bs4 import BeautifulSoup
 import pandas as pd
 import matplotlib.pyplot as plt
-import io
 import logging
-import os
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
-app = Flask(__name__, template_folder='templates')
+app = Flask(__name__)
 
 BASE_URL = "https://www.timeanddate.com/sun/"
 
@@ -24,53 +24,49 @@ def index():
 @app.route('/plot', methods=['POST'])
 def plot_day_length():
     data = request.json
-    countries_cities = data['locations']
-    year = data['year']
+    locations = data.get('locations', [])
+    year = data.get('year', 2024)
     
     plt.figure(figsize=(10, 6))
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
     try:
-        for location in countries_cities:
-            country = location['country']
-            city = location['city']
+        for loc in locations:
+            # Fix: Lowercase and replace spaces for URL
+            country = loc['country'].strip().lower().replace(" ", "-")
+            city = loc['city'].strip().lower().replace(" ", "-")
             combined_data = pd.DataFrame()
             
             for month in range(1, 13):
                 url = f'{BASE_URL}{country}/{city}?month={month}&year={year}'
-                response = requests.get(url)
+                response = requests.get(url, headers=headers)
                 soup = BeautifulSoup(response.content, 'html.parser')
-                tables = soup.find_all('table')
-                
-                # Identify the correct table
-                table = None
-                for tbl in tables:
-                    if 'Daylength' in tbl.get_text():
-                        table = tbl
-                        break
+                table = soup.find('table', {'id': 'as-monthsun'})
 
-                if table is None:
-                    raise ValueError(f"Day length table not found for {city} in {year}")
-
-                from io import StringIO
-                df = pd.read_html(StringIO(str(table)))[0]
-                df['Daylength'] = pd.to_datetime(df['Daylength'], format='%H:%M:%S', errors='coerce')
-                df = df.dropna(subset=['Daylength'])
-                df['Length'] = (df['Daylength'].dt.hour * 60 + df['Daylength'].dt.minute) / 60
-                combined_data = pd.concat([combined_data, df[['Date', 'Length']]], ignore_index=True)
+                if table:
+                    # Fix: Use StringIO to prevent OSError
+                    html_str = io.StringIO(str(table))
+                    df = pd.read_html(html_str)[0]
+                    
+                    # Target the 'Length' column for daylight hours
+                    df.columns = df.columns.get_level_values(-1)
+                    if 'Length' in df.columns:
+                        df['Daylength'] = pd.to_datetime(df['Length'], format='%H:%M:%S', errors='coerce')
+                        df = df.dropna(subset=['Daylength'])
+                        df['Hours'] = (df['Daylength'].dt.hour * 60 + df['Daylength'].dt.minute) / 60
+                        combined_data = pd.concat([combined_data, df[['Hours']]], ignore_index=True)
             
-            combined_data['Day'] = pd.to_datetime(combined_data['Date']).dt.dayofyear
-            plt.plot(combined_data['Day'], combined_data['Length'], label=f'{city}')
+            if not combined_data.empty:
+                plt.plot(combined_data.index, combined_data['Hours'], label=f'{city}')
         
-        plt.xlabel('Day')
-        plt.ylabel('Day Length (Total Hours)')
-        plt.title('Day Length Comparison')
+        plt.xlabel('Day of Year')
+        plt.ylabel('Hours of Daylight')
+        plt.title(f'Day Length Comparison ({year})')
         plt.legend()
         
-        # Save the plot to a BytesIO object
         img = io.BytesIO()
         plt.savefig(img, format='png')
         img.seek(0)
-        
         return send_file(img, mimetype='image/png')
     
     except Exception as e:
