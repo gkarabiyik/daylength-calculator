@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import io
 import logging
+import os
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
