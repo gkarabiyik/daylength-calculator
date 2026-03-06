@@ -52,13 +52,12 @@
             $('#plotImage').hide();
 
             const locations = [];
-            $('.row').each(function() {
+            $('.location-row').each(function() {
                 locations.push({
                     country: $(this).find('input[name="country"]').val(),
                     city: $(this).find('input[name="city"]').val()
                 });
             });
-
             try {
                 const response = await fetch('/plot', {
                     method: 'POST',
