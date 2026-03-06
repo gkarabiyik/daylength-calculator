@@ -42,10 +42,10 @@
 
 <script>
     $(document).ready(function() {
-        $('#addBtn').click(() => {
-            $('#inputs').append('<div class="row"><input type="text" name="country" placeholder="Country" required><input type="text" name="city" placeholder="City" required></div>');
-        });
 
+        $('#addBtn').click(() => {
+            $('#inputs').append('<div class="location-row"><input type="text" name="country" placeholder="Country" required><input type="text" name="city" placeholder="City" required></div>');
+        });
         $('#plotForm').submit(async function(e) {
             e.preventDefault();
             $('#status').show();
