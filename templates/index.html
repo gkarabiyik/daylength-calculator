@@ -15,24 +15,30 @@
         img { display: none; width: 100%; margin-top: 20px; border: 1px solid #ddd; }
     </style>
 </head>
-<body>
 
-<div class="box">
-    <h2>☀️ Daylight Plotter</h2>
-    <p>Compare daytime in different cities.</p>
-    <form id="plotForm">
-        <div id="inputs">
-            <div class="row">
-                <input type="text" name="country" placeholder="Country (e.g. finland)" required>
-                <input type="text" name="city" placeholder="City (e.g. tampere)" required>
+<body>
+    <div class="container">
+        <h1>🌍 Daylight Comparison</h1>
+        <p>Analyze daylight patterns.</p>
+        
+        <form id="plotForm">
+            <div id="inputs">
+                <div class="location-row">
+                    <input type="text" name="country" placeholder="Country (e.g. finland)" required>
+                    <input type="text" name="city" placeholder="City (e.g. tampere)" required>
+                </div>
             </div>
-        </div>
-        <button type="button" id="addBtn">+ Add City</button>
-        <button type="submit" id="submitBtn">Generate Plot</button>
-    </form>
-    <div id="status">⌛ Loading  data...</div>
-    <img id="plotImage">
-</div>
+
+            <div class="button-group">
+                <button type="button" id="addBtn">+ Add City</button>
+                <button type="submit" id="submitBtn">Generate Comparison Plot</button>
+            </div>
+        </form>
+
+        <div id="status">⏳ Processing data... this takes about 20s.</div>
+        <img id="plotImage">
+    </div>
+</body>
 
 <script>
     $(document).ready(function() {
