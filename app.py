@@ -24,7 +24,7 @@ def index():
 def plot_day_length():
     data = request.json
     locations = data.get('locations', [])
-    year = datetime.datetime.now().year
+    year = (datetime.datetime.now().year)-1
     
     plt.figure(figsize=(10, 6))
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
