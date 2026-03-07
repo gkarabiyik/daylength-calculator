@@ -4,86 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daylight Visualizer</title>
-    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="{{ url_for('static', filename='country-states.js') }}"></script>
-
     <style>
         :root { --primary: #007bff; --bg: #f8f9fa; --card: #ffffff; --border: #dcdfe4; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 40px 20px; margin: 0; }
-        .container { max-width: 650px; width: 100%; background: var(--card); padding: 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h1 { margin: 0 0 8px 0; font-size: 22px; text-align: center; font-weight: 700; color: #111; }
+        .container { max-width: 600px; width: 100%; background: var(--card); padding: 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { margin: 0 0 8px 0; font-size: 24px; text-align: center; color: var(--primary); font-weight: 700; }
         p { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
-        .location-row { display: flex; gap: 12px; margin-bottom: 12px; background: #fff; padding: 12px; border-radius: 10px; border: 1px solid var(--border); align-items: center; }
-        .select2-container--default .select2-selection--single { height: 40px; border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; }
+        
+        .location-row { display: flex; gap: 12px; margin-bottom: 12px; }
+        input { 
+            flex: 1; padding: 12px 16px; border: 1px solid var(--border); 
+            border-radius: 8px; font-size: 15px; outline: none; transition: 0.2s;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+
         .button-group { display: flex; gap: 12px; margin-top: 24px; }
-        button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 14px; }
-        #addBtn { background: #f1f3f5; color: #495057; }
+        button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 15px; }
+        #addBtn { background: #e4e6eb; color: #1c1e21; }
         #submitBtn { background: var(--primary); color: white; flex: 2; }
-        #status { display: none; text-align: center; margin-top: 24px; color: var(--primary); font-weight: 500; font-size: 14px;}
-        #plotImage { display: none; width: 100%; margin-top: 24px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        
+        #status { display: none; text-align: center; margin-top: 24px; color: var(--primary); font-weight: 500; }
+        #plotImage { display: none; width: 100%; margin-top: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     </style>
 </head>
-
 <body>
+    <datalist id="common-countries">
+        <option value="usa">USA</option>
+        <option value="uk">UK</option>
+        <option value="finland">Finland</option>
+        <option value="turkey">Turkey</option>
+        <option value="canada">Canada</option>
+    </datalist>
+
     <div class="container">
         <h1>☀️ Daylight Visualizer</h1>
-        <p>Compare sunlight patterns using data from the past year.</p>
+        <p>Enter any country and city to compare sunlight patterns from last year.</p>
         
         <form id="plotForm">
             <div id="inputs">
                 <div class="location-row">
-                    <select class="country-select" name="country" style="width: 48%"></select>
-                    <select class="state-select" name="city" style="width: 48%"></select>
+                    <input type="text" name="country" placeholder="Country" list="common-countries" required>
+                    <input type="text" name="city" placeholder="City" required>
                 </div>
             </div>
             <div class="button-group">
                 <button type="button" id="addBtn">+ Add City</button>
-                <button type="submit" id="submitBtn">Generate Comparison</button>
+                <button type="submit" id="submitBtn">Generate Plot</button>
             </div>
         </form>
 
-        <div id="status">⌛ Fetching 12 months of data... this takes about 20s.</div>
-        <img id="plotImage" alt="Daylight Comparison Graph">
+        <div id="status">⌛ Fetching 12 months of data... (Approx 20s)</div>
+        <img id="plotImage">
     </div>
 
     <script>
-        function initSelects(row) {
-            const countrySel = row.find('.country-select');
-            const stateSel = row.find('.state-select');
-
-            // Populate Countries from country-states.js
-            countrySel.append(new Option("Select Country", ""));
-            for (let code in country_and_states.country) {
-                countrySel.append(new Option(country_and_states.country[code], country_and_states.country[code]));
-            }
-            countrySel.select2();
-            stateSel.select2({ placeholder: "Select City/State" });
-
-            // Logic to update cities when country changes
-            countrySel.on('change', function() {
-                const countryName = $(this).val();
-                stateSel.empty().append(new Option("Select City/State", ""));
-                
-                const countryCode = Object.keys(country_and_states.country).find(key => country_and_states.country[key] === countryName);
-                const states = country_and_states.states[countryCode];
-
-                if (states) {
-                    states.forEach(s => stateSel.append(new Option(s.name, s.name)));
-                }
-                stateSel.trigger('change');
-            });
-        }
-
         $(document).ready(function() {
-            initSelects($('.location-row'));
-
+            // Adds new input rows
             $('#addBtn').click(() => {
-                const newRow = $('<div class="location-row"><select class="country-select" style="width: 48%"></select><select class="state-select" style="width: 48%"></select></div>');
-                $('#inputs').append(newRow);
-                initSelects(newRow);
+                $('#inputs').append(`
+                    <div class="location-row">
+                        <input type="text" name="country" placeholder="Country" list="common-countries" required>
+                        <input type="text" name="city" placeholder="City" required>
+                    </div>
+                `);
             });
 
             $('#plotForm').submit(async function(e) {
@@ -92,9 +76,10 @@
 
                 const locations = [];
                 $('.location-row').each(function() {
-                    const country = $(this).find('.country-select').val();
-                    const city = $(this).find('.state-select').val();
-                    if (country && city) locations.push({ country, city });
+                    locations.push({
+                        country: $(this).find('input[name="country"]').val(),
+                        city: $(this).find('input[name="city"]').val()
+                    });
                 });
 
                 try {
@@ -103,7 +88,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ locations })
                     });
-                    if (!response.ok) throw new Error("Scraper could not find that city. Try another.");
+                    if (!response.ok) throw new Error("Could not find data. Check your spelling!");
                     
                     const blob = await response.blob();
                     $('#plotImage').attr('src', URL.createObjectURL(blob)).fadeIn();

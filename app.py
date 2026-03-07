@@ -25,7 +25,6 @@ def index():
 def plot_day_length():
     data = request.json
     locations = data.get('locations', [])
-    # Scrape data from the previous full year
     year = datetime.datetime.now().year - 1 
     
     plt.figure(figsize=(10, 6))
@@ -35,7 +34,7 @@ def plot_day_length():
 
     try:
         for loc in locations:
-            # Format names for the URL: "United States" -> "usa", "New York" -> "new-york"
+            # Clean inputs for URL: "United States" -> "usa"
             country = loc['country'].strip().lower().replace(" ", "-")
             if country in ["usa", "united-states"]: country = "usa"
             if country in ["uk", "united-kingdom"]: country = "uk"
@@ -52,18 +51,15 @@ def plot_day_length():
                 table = soup.find('table', {'id': 'as-monthsun'}) or soup.find('table')
 
                 if table:
-                    # Use StringIO to handle the HTML string for Pandas
                     df = pd.read_html(io.StringIO(str(table)))[0]
                     if isinstance(df.columns, pd.MultiIndex):
                         df.columns = df.columns.get_level_values(-1)
                     
-                    # Find the column containing the daylight length (HH:MM:SS)
                     col_name = next((c for c in df.columns if 'Length' in str(c) or 'Daylength' in str(c)), None)
                     
                     if col_name:
                         df['TempDate'] = pd.to_datetime(df[col_name], format='%H:%M:%S', errors='coerce')
                         df = df.dropna(subset=['TempDate'])
-                        # Calculation: (Hours * 60 + Minutes) / 60
                         hours = (df['TempDate'].dt.hour * 60 + df['TempDate'].dt.minute) / 60
                         all_hours.extend(hours.tolist())
 
@@ -74,9 +70,8 @@ def plot_day_length():
                 data_found = True
 
         if not data_found:
-            return jsonify({'error': 'No data found. Check city names.'}), 404
+            return jsonify({'error': 'No data found. Check your spelling!'}), 404
 
-        # Format X-axis to show Month names (Jan, Feb, etc.)
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%b'))
         plt.gca().xaxis.set_major_locator(mdates.MonthLocator())
         plt.ylabel('Hours of Daylight')
